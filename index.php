@@ -55,3 +55,69 @@ if (isset($_POST['reset'])) {
 }
 
 $player_pos = $_SESSION['position'];
+
+//Building Board
+function getCellNumber($row, $col) {
+    $rowFromBottom = $row; // 0 = bottom row
+    $cellBase = $rowFromBottom * 10;
+    if ($rowFromBottom % 2 === 0) {
+        // left to right
+        return $cellBase + $col + 1;
+    } else {
+        // right to left
+        return $cellBase + (10 - $col);
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Snakes and Ladders</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="game-wrapper">
+
+    <div class="game-header">
+        <h2>Snakes and Ladders</h2>
+        <p>Welcome, <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong> | <a href="logout.php">Logout</a></p>
+    </div>
+
+    <?php if ($message): ?>
+        <p class="game-message"><?php echo htmlspecialchars($message); ?></p>
+    <?php endif; ?>
+
+    <p>Your position: <strong>Cell <?php echo $player_pos; ?></strong></p>
+
+    <!-- Board -->
+    <div class="board">
+        <?php
+        // Render from top row down to bottom row visually
+        for ($row = 9; $row >= 0; $row--):
+            for ($col = 0; $col < 10; $col++):
+                $cell = getCellNumber($row, $col);
+                $classes = "cell";
+
+                if ($cell === $player_pos) $classes .= " player";
+                if (isset($snakes[$cell]))  $classes .= " snake-head";
+                if (in_array($cell, $snakes)) $classes .= " snake-tail";
+                if (isset($ladders[$cell])) $classes .= " ladder-bottom";
+                if (in_array($cell, $ladders)) $classes .= " ladder-top";
+        ?>
+            <div class="<?php echo $classes; ?>">
+                <span class="cell-number"><?php echo $cell; ?></span>
+                <?php if ($cell === $player_pos): ?>
+                    <span class="token">🔵</span>
+                <?php endif; ?>
+                <?php if (isset($snakes[$cell])): ?>
+                    <span class="marker">🐍</span>
+                <?php endif; ?>
+                <?php if (isset($ladders[$cell])): ?>
+                    <span class="marker">🪜</span>
+                <?php endif; ?>
+            </div>
+        <?php endfor; endfor; ?>
+    </div>
