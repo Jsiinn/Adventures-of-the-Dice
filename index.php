@@ -75,7 +75,7 @@ function getCellNumber($row, $col) {
 <head>
     <meta charset="UTF-8">
     <title>Snakes and Ladders</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -121,3 +121,25 @@ function getCellNumber($row, $col) {
             </div>
         <?php endfor; endfor; ?>
     </div>
+
+        <!-- Controls -->
+    <div class="controls">
+        <form method="POST" action="index.php">
+            <?php if ($player_pos < 100): ?>
+                <button type="submit" name="roll">🎲 Roll Dice</button>
+            <?php endif; ?>
+            <button type="submit" name="reset" class="btn-reset">🔄 Reset</button>
+        </form>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+        <span>🐍 Snake head (slide down)</span>
+        <span>🪜 Ladder base (climb up)</span>
+        <span>🔵 Your token</span>
+    </div>
+
+</div>
+
+</body>
+</html>
