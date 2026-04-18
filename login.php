@@ -1,18 +1,42 @@
 <?php
 session_start();
 
+if (isset($_SESSION['username'])) {
+    header("Location: index.php");
+    exit();
+}
+
 $error = "";
+$users_file = "users.txt";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
     $password = trim($_POST["password"]);
 
-    if ($username === "player1" && $password === "password") {
-        $_SESSION["username"] = $username;
-        header("Location: index.php");
-        exit();
-    } else; {
-        $error = "Invalid username or password.";
+    if (empty($username) || empty($password)) {
+        $error = "Both fields are required.";
+    } elseif (!file_exists($users_file)) {
+        $error = "No accounts found. Please register first.";
+    } else {
+        $found = false;
+        $lines = file($users_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            [$stored_user, $stored_hash] = explode(":", $line, 2);
+            if (strtolower($stored_user) === strtolower($username)) {
+                $found = true;
+                if (password_verify($password, $stored_hash)) {
+                    $_SESSION['username'] = $stored_user;
+                    header("Location: index.php");
+                    exit();
+                } else {
+                    $error = "Incorrect password.";
+                }
+                break;
+            }
+        }
+        if (!$found) {
+            $error = "No account found with that username.";
+        }
     }
 }
 ?>
@@ -21,33 +45,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Login - Snakes and Ladders</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<h2>Login to Play!</h2>
+    <h2>Snakes and Ladders — Login</h2>
 
-<?php if ($error): ?>
-    <p style = "color: red;"><?php echo htmlspecialchars($error); ?></p>
-<?php endif; ?>
+    <?php if ($error): ?>
+        <p class="error"><?php echo htmlspecialchars($error); ?></p>
+    <?php endif; ?>
 
-<form method = "POST" action = "login.php">
-    <label for = "username">Username:</label>
-    <br>
-    <input type="text" id = "username" name = "username" required>
-    <br>
-    <br>
+    <form method="POST" action="login.php">
+        <label>Username:</label>
+        <input type="text" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required>
 
-    <label for = "password">Password:</label>
-    <br>
-    <input type="text" id = "password" name = "password" required>
-    <br>
-    <br>
+        <label>Password:</label>
+        <input type="password" name="password" required>
 
-    <button type = "submit">Login</button>
-</form>
+        <button type="submit">Login</button>
+    </form>
+
+    <p>Don't have an account? <a href="register.php">Register here</a></p>
 
 </body>
 </html>
