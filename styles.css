@@ -52,6 +52,39 @@ button {
     border-radius: 4px;
 }
 
+/*Win Box*/
+.win-box {
+    background: #fffde7;
+    border: 2px solid #f9a825;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.win-box h3 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+}
+
+.win-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-leaderboard {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #f9a825;
+    color: #000;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
 /*Board*/
 .board {
     display: grid;
@@ -187,24 +220,69 @@ button {
     margin-top: 16px;
     font-size: 14px;
 }
- 
+
 .leaderboard-table th,
 .leaderboard-table td {
     text-align: left;
     padding: 10px 12px;
     border-bottom: 1px solid #ddd;
 }
- 
+
 .leaderboard-table th {
     background: #f5f5f5;
     font-weight: bold;
 }
- 
+
 .leaderboard-table tr.highlight {
     background: #fffde7;
     font-weight: bold;
 }
- 
+
 .leaderboard-table tr:hover {
     background: #fafafa;
+}
+
+/*Recap*/
+.recap-summary {
+    background: #f0f4ff;
+    border-left: 4px solid #5c6bc0;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-size: 15px;
+}
+
+.recap-events,
+.recap-history {
+    margin-bottom: 20px;
+}
+
+.recap-event-entry,
+.recap-roll-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.recap-num {
+    min-width: 24px;
+    font-weight: bold;
+    color: #999;
+    font-size: 12px;
+    padding-top: 2px;
+}
+
+.recap-empty {
+    color: #999;
+    font-style: italic;
+}
+
+.recap-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
 }

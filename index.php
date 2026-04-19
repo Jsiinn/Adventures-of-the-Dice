@@ -98,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['roll'])) {
             if (!$_SESSION['winner_saved']) {
                 $winner = $turn === 0 ? $_SESSION['username'] : "Player 2";
                 recordWin($winner, $difficulty, $_SESSION['turn_count']);
+                $_SESSION['recap_winner'] = $winner;
                 $_SESSION['winner_saved'] = true;
             }
         } elseif (isset($snakes[$pos])) {
@@ -142,13 +143,14 @@ if (isset($_POST['reset'])) {
     $_SESSION['last_event']   = null;
     $_SESSION['turn_count']   = 0;
     $_SESSION['winner_saved'] = false;
+    $_SESSION['recap_winner'] = null;
     $message = "Game reset!";
 }
 
 $p1 = $_SESSION['positions'][0];
 $p2 = $_SESSION['positions'][1];
 
-//Building Board
+// Building Board
 function getCellNumber($row, $col) {
     $rowFromBottom = $row;
     $cellBase      = $rowFromBottom * 10;
@@ -189,9 +191,12 @@ function getCellNumber($row, $col) {
     <!-- Win Screen -->
     <?php if ($p1 === 100 || $p2 === 100): ?>
         <div class="win-box">
-            <h3>🎉 <?php echo $p1 === 100 ? htmlspecialchars($_SESSION['username']) : 'Player 2'; ?> wins!</h3>
+            <h3>🎉 <?php echo htmlspecialchars($_SESSION['recap_winner'] ?? 'Player'); ?> wins!</h3>
             <p>Completed in <strong><?php echo $_SESSION['turn_count']; ?></strong> turns on <strong><?php echo ucfirst($difficulty); ?></strong> difficulty.</p>
-            <a href="leaderboard.php" class="btn-leaderboard">🏆 View Leaderboard</a>
+            <div class="win-actions">
+                <a href="recap.php" class="btn-leaderboard">📜 Adventure Recap</a>
+                <a href="leaderboard.php" class="btn-leaderboard">🏆 Leaderboard</a>
+            </div>
         </div>
     <?php endif; ?>
 
