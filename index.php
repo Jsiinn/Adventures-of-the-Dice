@@ -2,7 +2,7 @@
 session_start();
 
 if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
+    header("Location: lobby.php");
     exit();
 }
 
@@ -153,6 +153,7 @@ function getCellNumber($row, $col) {
             <?php endif; ?>
             <button type="submit" name="reset" class="btn-reset">🔄 Reset</button>
         </form>
+        <a href="lobby.php" class = "btn-reset">Change Difficulty</a>
     </div>
 
     <!-- Legend -->

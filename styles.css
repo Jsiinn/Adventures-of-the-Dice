@@ -117,3 +117,49 @@ button {
 .roll-history p {
     margin: 4px 0;
 }
+
+/*Difficulty*/
+.difficulty-options form {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.difficulty-card {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    width: 160px;
+    text-align: center;
+}
+
+.difficulty-card h4 {
+    margin: 0 0 8px 0;
+}
+
+.difficulty-card p {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.difficulty-card.active {
+    border-color: #333;
+    background: #f9f9f9;
+}
+
+.difficulty-card button {
+    width: 100%;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.controls a.btn-reset {
+    display: inline-block;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #000;
+    background: #eee;
+    border: 1px solid #ccc;
+}
