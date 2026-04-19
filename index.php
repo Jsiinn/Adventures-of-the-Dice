@@ -19,9 +19,13 @@ $ladders = [
     57 => 76
 ];
 
-//Player Position
-if (!isset($_SESSION['position'])) {
-    $_SESSION['position'] = 0;
+//Player Positions + Turn
+if (!isset($_SESSION['positions'])) {
+    $_SESSION['positions'] = [0, 0];
+}
+
+if (!isset($_SESSION['turn'])) {
+    $_SESSION['turn'] = 0; 
 }
 
 //Dice Roll
@@ -30,41 +34,50 @@ $message = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['roll'])) {
     $roll = rand(1, 6);
-    $pos = $_SESSION['position'] + $roll;
+
+    $turn = $_SESSION['turn'];
+    $pos = $_SESSION['positions'][$turn] + $roll;
 
     if ($pos >= 100) {
         $pos = 100;
-        $message = "🎉 You reached cell 100 — You Win!";
+        $message = "🎉 Player " . ($turn + 1) . " reached 100 — Wins!";
     } elseif (isset($snakes[$pos])) {
-        $message = "🐍 Snake! Sliding down from $pos to {$snakes[$pos]}";
+        $message = "🐍 Player " . ($turn + 1) . " slid down!";
         $pos = $snakes[$pos];
     } elseif (isset($ladders[$pos])) {
-        $message = "🪜 Ladder! Climbing up from $pos to {$ladders[$pos]}";
+        $message = "🪜 Player " . ($turn + 1) . " climbed up!";
         $pos = $ladders[$pos];
     } else {
-        $message = "🎲 You rolled a $roll and moved to cell $pos.";
+        $message = "🎲 Player " . ($turn + 1) . " rolled $roll → $pos";
     }
 
-    $_SESSION['position'] = $pos;
+    $_SESSION['positions'][$turn] = $pos;
+
+    //Switch turn
+    $_SESSION['turn'] = 1 - $turn;
+
+    $_SESSION['roll_history'][] = "P" . ($turn + 1) . ": $roll → Cell $pos";
 }
 
 //Reset 
 if (isset($_POST['reset'])) {
-    $_SESSION['position'] = 0;
+    $_SESSION['positions'] = [0, 0];
+    $_SESSION['turn'] = 0;
+    $_SESSION['roll_history'] = [];
     $message = "Game reset!";
 }
 
-$player_pos = $_SESSION['position'];
+$p1 = $_SESSION['positions'][0];
+$p2 = $_SESSION['positions'][1];
 
 //Building Board
 function getCellNumber($row, $col) {
-    $rowFromBottom = $row; // 0 = bottom row
+    $rowFromBottom = $row;
     $cellBase = $rowFromBottom * 10;
+
     if ($rowFromBottom % 2 === 0) {
-        // left to right
         return $cellBase + $col + 1;
     } else {
-        // right to left
         return $cellBase + (10 - $col);
     }
 }
@@ -90,18 +103,20 @@ function getCellNumber($row, $col) {
         <p class="game-message"><?php echo htmlspecialchars($message); ?></p>
     <?php endif; ?>
 
-    <p>Your position: <strong>Cell <?php echo $player_pos; ?></strong></p>
+    <!-- Turn Display -->
+    <p>Current Turn: <strong>Player <?php echo $_SESSION['turn'] + 1; ?></strong></p>
+
+    <!-- Both positions -->
+    <p>Player 1: <strong>Cell <?php echo $p1; ?></strong> | Player 2: <strong>Cell <?php echo $p2; ?></strong></p>
 
     <!-- Board -->
     <div class="board">
         <?php
-        // Render from top row down to bottom row visually
         for ($row = 9; $row >= 0; $row--):
             for ($col = 0; $col < 10; $col++):
                 $cell = getCellNumber($row, $col);
                 $classes = "cell";
 
-                if ($cell === $player_pos) $classes .= " player";
                 if (isset($snakes[$cell]))  $classes .= " snake-head";
                 if (in_array($cell, $snakes)) $classes .= " snake-tail";
                 if (isset($ladders[$cell])) $classes .= " ladder-bottom";
@@ -109,12 +124,20 @@ function getCellNumber($row, $col) {
         ?>
             <div class="<?php echo $classes; ?>">
                 <span class="cell-number"><?php echo $cell; ?></span>
-                <?php if ($cell === $player_pos): ?>
+
+                <!-- ✅ Player Tokens -->
+                <?php if ($cell === $p1): ?>
                     <span class="token">🔵</span>
                 <?php endif; ?>
+
+                <?php if ($cell === $p2): ?>
+                    <span class="token">🔴</span>
+                <?php endif; ?>
+
                 <?php if (isset($snakes[$cell])): ?>
                     <span class="marker">🐍</span>
                 <?php endif; ?>
+
                 <?php if (isset($ladders[$cell])): ?>
                     <span class="marker">🪜</span>
                 <?php endif; ?>
@@ -122,10 +145,10 @@ function getCellNumber($row, $col) {
         <?php endfor; endfor; ?>
     </div>
 
-        <!-- Controls -->
+    <!-- Controls -->
     <div class="controls">
         <form method="POST" action="index.php">
-            <?php if ($player_pos < 100): ?>
+            <?php if ($p1 < 100 && $p2 < 100): ?>
                 <button type="submit" name="roll">🎲 Roll Dice</button>
             <?php endif; ?>
             <button type="submit" name="reset" class="btn-reset">🔄 Reset</button>
@@ -136,8 +159,19 @@ function getCellNumber($row, $col) {
     <div class="legend">
         <span>🐍 Snake head (slide down)</span>
         <span>🪜 Ladder base (climb up)</span>
-        <span>🔵 Your token</span>
+        <span>🔵 Player 1</span>
+        <span>🔴 Player 2</span>
     </div>
+
+    <!-- History -->
+    <?php if (!empty($_SESSION['roll_history'])): ?>
+    <div class="roll-history">
+        <h4>Roll History</h4>
+        <?php foreach (array_reverse($_SESSION['roll_history']) as $entry): ?>
+            <p><?php echo htmlspecialchars($entry); ?></p>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 
 </div>
 
