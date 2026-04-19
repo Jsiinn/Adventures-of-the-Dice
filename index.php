@@ -7,17 +7,24 @@ if (!isset($_SESSION['username'])) {
 }
 
 //Board Setup
-$snakes = [
-    17 => 7,
-    54 => 34,
-    62 => 19
+$boards = [
+    'beginner' => [
+        'snakes'  => [17 => 7, 54 => 34, 62 => 19],
+        'ladders' => [3 => 22, 20 => 41, 57 => 76]
+    ],
+    'standard' => [
+        'snakes'  => [17 => 7, 54 => 34, 62 => 19, 64 => 40, 87 => 24, 93 => 73],
+        'ladders' => [3 => 22, 20 => 41, 57 => 76, 28 => 84, 51 => 67]
+    ],
+    'expert' => [
+        'snakes'  => [17 => 7, 54 => 34, 62 => 19, 64 => 40, 87 => 24, 93 => 73, 46 => 5, 32 => 10, 79 => 43],
+        'ladders' => [3 => 22, 20 => 41, 57 => 76, 8 => 52]
+    ]
 ];
 
-$ladders = [
-    3  => 22,
-    20 => 41,
-    57 => 76
-];
+$difficulty = $_SESSION['difficulty'] ?? 'beginner';
+$snakes  = $boards[$difficulty]['snakes'];
+$ladders = $boards[$difficulty]['ladders'];
 
 //Player Positions + Turn
 if (!isset($_SESSION['positions'])) {
