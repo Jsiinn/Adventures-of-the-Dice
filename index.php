@@ -58,19 +58,21 @@ function narrate($player, $cell, $event) {
     }
 }
 
-//Player Positions + Turn
-if (!isset($_SESSION['positions'])) {
-    $_SESSION['positions'] = [0, 0];
+//Leaderboard writer
+function recordWin($winner, $difficulty, $turns) {
+    $file  = "leaderboard.txt";
+    $date  = date("Y-m-d H:i");
+    $entry = "$winner|$difficulty|$turns|$date" . PHP_EOL;
+    file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
 }
-if (!isset($_SESSION['turn'])) {
-    $_SESSION['turn'] = 0;
-}
-if (!isset($_SESSION['events_log'])) {
-    $_SESSION['events_log'] = [];
-}
-if (!isset($_SESSION['skip_turn'])) {
-    $_SESSION['skip_turn'] = [false, false];
-}
+
+//Session init
+if (!isset($_SESSION['positions']))    $_SESSION['positions']    = [0, 0];
+if (!isset($_SESSION['turn']))         $_SESSION['turn']         = 0;
+if (!isset($_SESSION['events_log']))   $_SESSION['events_log']   = [];
+if (!isset($_SESSION['skip_turn']))    $_SESSION['skip_turn']    = [false, false];
+if (!isset($_SESSION['turn_count']))   $_SESSION['turn_count']   = 0;
+if (!isset($_SESSION['winner_saved'])) $_SESSION['winner_saved'] = false;
 
 //Dice Roll
 $roll    = null;
@@ -87,10 +89,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['roll'])) {
     } else {
         $roll = rand(1, 6);
         $pos  = $_SESSION['positions'][$turn] + $roll;
+        $_SESSION['turn_count']++;
 
         if ($pos >= 100) {
             $pos     = 100;
             $message = "🎉 Player " . ($turn + 1) . " reached 100 — Wins!";
+
+            if (!$_SESSION['winner_saved']) {
+                $winner = $turn === 0 ? $_SESSION['username'] : "Player 2";
+                recordWin($winner, $difficulty, $_SESSION['turn_count']);
+                $_SESSION['winner_saved'] = true;
+            }
         } elseif (isset($snakes[$pos])) {
             $message = "🐍 Player " . ($turn + 1) . " hit a snake! Sliding down from $pos to {$snakes[$pos]}";
             $pos     = $snakes[$pos];
@@ -131,6 +140,8 @@ if (isset($_POST['reset'])) {
     $_SESSION['events_log']   = [];
     $_SESSION['skip_turn']    = [false, false];
     $_SESSION['last_event']   = null;
+    $_SESSION['turn_count']   = 0;
+    $_SESSION['winner_saved'] = false;
     $message = "Game reset!";
 }
 
@@ -175,6 +186,15 @@ function getCellNumber($row, $col) {
         </div>
     <?php endif; ?>
 
+    <!-- Win Screen -->
+    <?php if ($p1 === 100 || $p2 === 100): ?>
+        <div class="win-box">
+            <h3>🎉 <?php echo $p1 === 100 ? htmlspecialchars($_SESSION['username']) : 'Player 2'; ?> wins!</h3>
+            <p>Completed in <strong><?php echo $_SESSION['turn_count']; ?></strong> turns on <strong><?php echo ucfirst($difficulty); ?></strong> difficulty.</p>
+            <a href="leaderboard.php" class="btn-leaderboard">🏆 View Leaderboard</a>
+        </div>
+    <?php endif; ?>
+
     <!-- Turn Display -->
     <p>Current Turn: <strong>Player <?php echo $_SESSION['turn'] + 1; ?></strong>
         &nbsp;|&nbsp; Difficulty: <strong><?php echo ucfirst($difficulty); ?></strong>
@@ -191,10 +211,10 @@ function getCellNumber($row, $col) {
                 $cell    = getCellNumber($row, $col);
                 $classes = "cell";
 
-                if (isset($snakes[$cell]))       $classes .= " snake-head";
-                if (in_array($cell, $snakes))    $classes .= " snake-tail";
-                if (isset($ladders[$cell]))      $classes .= " ladder-bottom";
-                if (in_array($cell, $ladders))   $classes .= " ladder-top";
+                if (isset($snakes[$cell]))     $classes .= " snake-head";
+                if (in_array($cell, $snakes))  $classes .= " snake-tail";
+                if (isset($ladders[$cell]))    $classes .= " ladder-bottom";
+                if (in_array($cell, $ladders)) $classes .= " ladder-top";
 
                 if (isset($event_cells[$cell])) {
                     $type = $event_cells[$cell]['type'];
@@ -246,6 +266,7 @@ function getCellNumber($row, $col) {
             <button type="submit" name="reset" class="btn-reset">🔄 Reset</button>
         </form>
         <a href="lobby.php" class="btn-reset">⚙️ Change Difficulty</a>
+        <a href="leaderboard.php" class="btn-reset">🏆 Leaderboard</a>
     </div>
 
     <!-- Legend -->

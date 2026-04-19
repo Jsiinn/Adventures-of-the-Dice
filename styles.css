@@ -179,3 +179,32 @@ button {
     padding: 8px;
     cursor: pointer;
 }
+
+/*Leaderboard*/
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 14px;
+}
+ 
+.leaderboard-table th,
+.leaderboard-table td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid #ddd;
+}
+ 
+.leaderboard-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+ 
+.leaderboard-table tr.highlight {
+    background: #fffde7;
+    font-weight: bold;
+}
+ 
+.leaderboard-table tr:hover {
+    background: #fafafa;
+}
