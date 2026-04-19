@@ -38,7 +38,12 @@ button {
     background: #f0f0f0;
     padding: 10px;
     border-left: 4px solid #333;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+}
+
+.ai-message {
+    background: #e8f5e9;
+    border-left-color: #388e3c;
 }
 
 /*Narrator*/
@@ -177,7 +182,38 @@ button {
 }
 
 /*Lobby*/
-.difficulty-options form {
+.lobby-options {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.lobby-card {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    width: 160px;
+    text-align: center;
+}
+
+.lobby-card h4 {
+    margin: 0 0 8px 0;
+}
+
+.lobby-card p {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.lobby-card.active {
+    border-color: #333;
+    background: #f9f9f9;
+}
+
+.difficulty-options {
     display: flex;
     gap: 16px;
     margin-top: 12px;
@@ -205,12 +241,6 @@ button {
 .difficulty-card.active {
     border-color: #333;
     background: #f9f9f9;
-}
-
-.difficulty-card button {
-    width: 100%;
-    padding: 8px;
-    cursor: pointer;
 }
 
 /*Leaderboard*/
@@ -242,7 +272,7 @@ button {
     background: #fafafa;
 }
 
-/*Recap*/
+/* --- Recap --- */
 .recap-summary {
     background: #f0f4ff;
     border-left: 4px solid #5c6bc0;

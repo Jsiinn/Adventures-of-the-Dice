@@ -28,6 +28,7 @@ $boards = [
 ];
 
 $difficulty = $_SESSION['difficulty'] ?? 'beginner';
+$game_mode  = $_SESSION['game_mode']  ?? '2player';
 $snakes     = $boards[$difficulty]['snakes'];
 $ladders    = $boards[$difficulty]['ladders'];
 
@@ -43,7 +44,7 @@ $event_cells = [
 
 //AI Narrator
 function narrate($player, $cell, $event) {
-    $name = "Player $player";
+    $name = $player;
     switch ($event['type']) {
         case 'bonus':
             return "⭐ $name lands on cell $cell — {$event['msg']} Zooming ahead " . abs($event['move']) . " cells!";
@@ -58,12 +59,78 @@ function narrate($player, $cell, $event) {
     }
 }
 
+//Apply snake/ladder to a position
+function resolvePosition($pos, $snakes, $ladders) {
+    if (isset($snakes[$pos]))  return $snakes[$pos];
+    if (isset($ladders[$pos])) return $ladders[$pos];
+    return $pos;
+}
+
+//AI greedy roll 
+function aiRoll($current_pos, $snakes, $ladders) {
+    $best_pos  = -1;
+    $best_roll = 1;
+
+    for ($r = 1; $r <= 6; $r++) {
+        $landing = $current_pos + $r;
+        if ($landing > 100) continue;
+        if ($landing === 100) return $r; 
+        $resolved = resolvePosition($landing, $snakes, $ladders);
+        if (!isset($snakes[$landing]) && $resolved > $best_pos) {
+            $best_pos  = $resolved;
+            $best_roll = $r;
+        }
+    }
+
+    if ($best_pos === -1) {
+        for ($r = 1; $r <= 6; $r++) {
+            $landing = $current_pos + $r;
+            if ($landing <= 100) {
+                $best_roll = $r;
+                break;
+            }
+        }
+    }
+
+    return $best_roll;
+}
+
 //Leaderboard writer
 function recordWin($winner, $difficulty, $turns) {
     $file  = "leaderboard.txt";
     $date  = date("Y-m-d H:i");
     $entry = "$winner|$difficulty|$turns|$date" . PHP_EOL;
     file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
+}
+
+//Process a single player/AI turn
+function processTurn($name, $pos, $roll, $snakes, $ladders, $event_cells) {
+    $message   = "";
+    $narration = null;
+    $new_pos   = $pos + $roll;
+
+    if ($new_pos >= 100) {
+        $new_pos = 100;
+        $message = "🎉 $name rolled $roll and reached 100 — Wins!";
+    } elseif (isset($snakes[$new_pos])) {
+        $message = "🐍 $name rolled $roll — hit a snake! Sliding down from $new_pos to {$snakes[$new_pos]}";
+        $new_pos = $snakes[$new_pos];
+    } elseif (isset($ladders[$new_pos])) {
+        $message = "🪜 $name rolled $roll — hit a ladder! Climbing up from $new_pos to {$ladders[$new_pos]}";
+        $new_pos = $ladders[$new_pos];
+    } else {
+        $message = "🎲 $name rolled $roll → Cell $new_pos";
+    }
+
+    if (isset($event_cells[$new_pos]) && $new_pos < 100) {
+        $event     = $event_cells[$new_pos];
+        $narration = narrate($name, $new_pos, $event);
+        if ($event['type'] !== 'skip') {
+            $new_pos = max(1, min(99, $new_pos + $event['move']));
+        }
+    }
+
+    return [$new_pos, $message, $narration];
 }
 
 //Session init
@@ -73,64 +140,83 @@ if (!isset($_SESSION['events_log']))   $_SESSION['events_log']   = [];
 if (!isset($_SESSION['skip_turn']))    $_SESSION['skip_turn']    = [false, false];
 if (!isset($_SESSION['turn_count']))   $_SESSION['turn_count']   = 0;
 if (!isset($_SESSION['winner_saved'])) $_SESSION['winner_saved'] = false;
+if (!isset($_SESSION['ai_message']))   $_SESSION['ai_message']   = null;
 
-//Dice Roll
-$roll    = null;
-$message = "";
+$roll      = null;
+$message   = "";
+$p1_name   = $_SESSION['username'];
+$p2_name   = $game_mode === 'ai' ? '🤖 AI' : 'Player 2';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['roll'])) {
     $turn = $_SESSION['turn'];
+    $_SESSION['ai_message']  = null;
+    $_SESSION['last_event']  = null;
 
     //Handle skip turn
     if ($_SESSION['skip_turn'][$turn]) {
         $_SESSION['skip_turn'][$turn] = false;
-        $message = "⏸️ Player " . ($turn + 1) . "'s turn was skipped!";
+        $message = "⏸️ " . ($turn === 0 ? $p1_name : $p2_name) . "'s turn was skipped!";
         $_SESSION['turn'] = 1 - $turn;
     } else {
+        //Human roll
         $roll = rand(1, 6);
-        $pos  = $_SESSION['positions'][$turn] + $roll;
         $_SESSION['turn_count']++;
+        $pos  = $_SESSION['positions'][0];
 
-        if ($pos >= 100) {
-            $pos     = 100;
-            $message = "🎉 Player " . ($turn + 1) . " reached 100 — Wins!";
+        [$new_pos, $message, $narration] = processTurn($p1_name, $pos, $roll, $snakes, $ladders, $event_cells);
 
-            if (!$_SESSION['winner_saved']) {
-                $winner = $turn === 0 ? $_SESSION['username'] : "Player 2";
-                recordWin($winner, $difficulty, $_SESSION['turn_count']);
-                $_SESSION['recap_winner'] = $winner;
-                $_SESSION['winner_saved'] = true;
-            }
-        } elseif (isset($snakes[$pos])) {
-            $message = "🐍 Player " . ($turn + 1) . " hit a snake! Sliding down from $pos to {$snakes[$pos]}";
-            $pos     = $snakes[$pos];
-        } elseif (isset($ladders[$pos])) {
-            $message = "🪜 Player " . ($turn + 1) . " hit a ladder! Climbing up from $pos to {$ladders[$pos]}";
-            $pos     = $ladders[$pos];
-        } else {
-            $message = "🎲 Player " . ($turn + 1) . " rolled $roll → Cell $pos";
-        }
-
-        //Check for event tile
-        if (isset($event_cells[$pos]) && $pos < 100) {
-            $event     = $event_cells[$pos];
-            $narration = narrate($turn + 1, $pos, $event);
+        if ($narration) {
             $_SESSION['last_event']   = $narration;
             $_SESSION['events_log'][] = $narration;
-
-            if ($event['type'] === 'skip') {
-                $_SESSION['skip_turn'][$turn] = true;
-            } else {
-                $pos = max(1, min(99, $pos + $event['move']));
+            if (isset($event_cells[$_SESSION['positions'][0] + $roll]) && $event_cells[$_SESSION['positions'][0] + $roll]['type'] === 'skip') {
+                $_SESSION['skip_turn'][0] = true;
             }
-        } else {
-            $_SESSION['last_event'] = null;
         }
 
-        $_SESSION['positions'][$turn] = $pos;
-        $_SESSION['turn']             = 1 - $turn;
-        $_SESSION['roll_history'][]   = "P" . ($turn + 1) . ": $roll → Cell $pos";
+        $_SESSION['positions'][0]   = $new_pos;
+        $_SESSION['roll_history'][] = "P1: $roll → Cell $new_pos";
+
+        if ($new_pos >= 100) {
+            if (!$_SESSION['winner_saved']) {
+                recordWin($p1_name, $difficulty, $_SESSION['turn_count']);
+                $_SESSION['recap_winner'] = $p1_name;
+                $_SESSION['winner_saved'] = true;
+            }
+        } elseif ($game_mode === 'ai') {
+            $ai_pos  = $_SESSION['positions'][1];
+            $ai_roll = aiRoll($ai_pos, $snakes, $ladders);
+            $_SESSION['turn_count']++;
+
+            [$ai_new_pos, $ai_msg, $ai_narration] = processTurn('🤖 AI', $ai_pos, $ai_roll, $snakes, $ladders, $event_cells);
+
+            if ($ai_narration) {
+                $_SESSION['events_log'][] = $ai_narration;
+            }
+
+            $_SESSION['positions'][1]   = $ai_new_pos;
+            $_SESSION['roll_history'][] = "AI: $ai_roll → Cell $ai_new_pos";
+            $_SESSION['ai_message']     = $ai_msg;
+
+            if ($ai_new_pos >= 100 && !$_SESSION['winner_saved']) {
+                recordWin('AI', $difficulty, $_SESSION['turn_count']);
+                $_SESSION['recap_winner'] = '🤖 AI';
+                $_SESSION['winner_saved'] = true;
+            }
+        } else {
+            //2 player — switch turn
+            $_SESSION['turn'] = 1 - $turn;
+        }
     }
+
+    //2 player turn switch after skip
+    if ($game_mode === '2player' && isset($_POST['roll']) && $_SESSION['skip_turn'][$turn] === false && $turn !== $_SESSION['turn']) {
+
+    }
+}
+
+//2-player manual turn 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['roll']) && $game_mode === '2player') {
+
 }
 
 //Reset
@@ -144,13 +230,14 @@ if (isset($_POST['reset'])) {
     $_SESSION['turn_count']   = 0;
     $_SESSION['winner_saved'] = false;
     $_SESSION['recap_winner'] = null;
+    $_SESSION['ai_message']   = null;
     $message = "Game reset!";
 }
 
 $p1 = $_SESSION['positions'][0];
 $p2 = $_SESSION['positions'][1];
 
-// Building Board
+//Building Board
 function getCellNumber($row, $col) {
     $rowFromBottom = $row;
     $cellBase      = $rowFromBottom * 10;
@@ -182,6 +269,10 @@ function getCellNumber($row, $col) {
         <p class="game-message"><?php echo htmlspecialchars($message); ?></p>
     <?php endif; ?>
 
+    <?php if (!empty($_SESSION['ai_message'])): ?>
+        <p class="game-message ai-message"><?php echo htmlspecialchars($_SESSION['ai_message']); ?></p>
+    <?php endif; ?>
+
     <?php if (!empty($_SESSION['last_event'])): ?>
         <div class="narrator-box">
             <p><?php echo htmlspecialchars($_SESSION['last_event']); ?></p>
@@ -189,9 +280,9 @@ function getCellNumber($row, $col) {
     <?php endif; ?>
 
     <!-- Win Screen -->
-    <?php if ($p1 === 100 || $p2 === 100): ?>
+    <?php if ($p1 >= 100 || $p2 >= 100): ?>
         <div class="win-box">
-            <h3>🎉 <?php echo htmlspecialchars($_SESSION['recap_winner'] ?? 'Player'); ?> wins!</h3>
+            <h3>🎉 <?php echo htmlspecialchars($_SESSION['recap_winner'] ?? 'Someone'); ?> wins!</h3>
             <p>Completed in <strong><?php echo $_SESSION['turn_count']; ?></strong> turns on <strong><?php echo ucfirst($difficulty); ?></strong> difficulty.</p>
             <div class="win-actions">
                 <a href="recap.php" class="btn-leaderboard">📜 Adventure Recap</a>
@@ -200,13 +291,24 @@ function getCellNumber($row, $col) {
         </div>
     <?php endif; ?>
 
-    <!-- Turn Display -->
-    <p>Current Turn: <strong>Player <?php echo $_SESSION['turn'] + 1; ?></strong>
+    <!-- Turn / Mode Display -->
+    <p>
+        Mode: <strong><?php echo $game_mode === 'ai' ? 'vs 🤖 AI' : '👥 2 Player'; ?></strong>
+        &nbsp;|&nbsp;
+        <?php if ($game_mode === '2player'): ?>
+            Current Turn: <strong><?php echo $_SESSION['turn'] === 0 ? htmlspecialchars($p1_name) : $p2_name; ?></strong>
+        <?php else: ?>
+            Your turn — roll when ready!
+        <?php endif; ?>
         &nbsp;|&nbsp; Difficulty: <strong><?php echo ucfirst($difficulty); ?></strong>
     </p>
 
-    <!-- Both positions -->
-    <p>🔵 Player 1: <strong>Cell <?php echo $p1; ?></strong> &nbsp;|&nbsp; 🔴 Player 2: <strong>Cell <?php echo $p2; ?></strong></p>
+    <!-- Positions -->
+    <p>
+        🔵 <?php echo htmlspecialchars($p1_name); ?>: <strong>Cell <?php echo $p1; ?></strong>
+        &nbsp;|&nbsp;
+        <?php echo $game_mode === 'ai' ? '🤖 AI' : '🔴 Player 2'; ?>: <strong>Cell <?php echo $p2; ?></strong>
+    </p>
 
     <!-- Board -->
     <div class="board">
@@ -236,7 +338,7 @@ function getCellNumber($row, $col) {
                 <?php endif; ?>
 
                 <?php if ($cell === $p2): ?>
-                    <span class="token">🔴</span>
+                    <span class="token"><?php echo $game_mode === 'ai' ? '🤖' : '🔴'; ?></span>
                 <?php endif; ?>
 
                 <?php if (isset($snakes[$cell])): ?>
@@ -282,8 +384,8 @@ function getCellNumber($row, $col) {
         <span>💥 Penalty</span>
         <span>⏸️ Skip turn</span>
         <span>🌀 Warp</span>
-        <span>🔵 Player 1</span>
-        <span>🔴 Player 2</span>
+        <span>🔵 <?php echo htmlspecialchars($p1_name); ?></span>
+        <span><?php echo $game_mode === 'ai' ? '🤖 AI' : '🔴 Player 2'; ?></span>
     </div>
 
     <!-- History -->

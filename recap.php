@@ -6,11 +6,12 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 
-$events   = $_SESSION['events_log']   ?? [];
-$history  = $_SESSION['roll_history'] ?? [];
-$turns    = $_SESSION['turn_count']   ?? 0;
-$diff     = ucfirst($_SESSION['difficulty'] ?? 'beginner');
-$winner   = $_SESSION['recap_winner'] ?? 'Unknown';
+$events  = $_SESSION['events_log']   ?? [];
+$history = $_SESSION['roll_history'] ?? [];
+$turns   = $_SESSION['turn_count']   ?? 0;
+$diff    = ucfirst($_SESSION['difficulty'] ?? 'beginner');
+$winner  = $_SESSION['recap_winner'] ?? 'Unknown';
+$mode    = $_SESSION['game_mode']    ?? '2player';
 ?>
 
 <!DOCTYPE html>
@@ -29,12 +30,11 @@ $winner   = $_SESSION['recap_winner'] ?? 'Unknown';
         <p><a href="index.php">← Back to Game</a> | <a href="logout.php">Logout</a></p>
     </div>
 
-    <!-- Summary -->
     <div class="recap-summary">
-        <p>🏆 <strong><?php echo htmlspecialchars($winner); ?></strong> won on <strong><?php echo htmlspecialchars($diff); ?></strong> difficulty in <strong><?php echo $turns; ?></strong> turns.</p>
+        <p>🏆 <strong><?php echo htmlspecialchars($winner); ?></strong> won on <strong><?php echo htmlspecialchars($diff); ?></strong> difficulty in <strong><?php echo $turns; ?></strong> turns
+        (<?php echo $mode === 'ai' ? 'vs 🤖 AI' : '👥 2 Player'; ?> mode).</p>
     </div>
 
-    <!-- Events Log -->
     <h3>⚡ Events That Occurred</h3>
     <?php if (empty($events)): ?>
         <p class="recap-empty">No special events occurred this game — a clean run!</p>
@@ -49,7 +49,6 @@ $winner   = $_SESSION['recap_winner'] ?? 'Unknown';
         </div>
     <?php endif; ?>
 
-    <!-- Full Roll History -->
     <h3>🎲 Full Roll History</h3>
     <?php if (empty($history)): ?>
         <p class="recap-empty">No rolls recorded.</p>
