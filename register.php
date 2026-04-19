@@ -55,8 +55,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="game-wrapper">
 
-    <h2>Register</h2>
+    <div class="game-header">
+        <h2>🎲 Snakes & Ladders</h2>
+    </div>
+
+    <h3>Register</h3>
 
     <?php if ($error): ?>
         <p class="error"><?php echo htmlspecialchars($error); ?></p>
@@ -78,7 +83,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <button type="submit">Register</button>
     </form>
 
-    <p>Already have an account? <a href="login.php">Login here</a></p>
+    <p style="margin-top: 16px;">Already have an account? <a href="login.php">Login here</a></p>
 
+</div>
 </body>
 </html>

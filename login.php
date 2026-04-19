@@ -49,8 +49,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="game-wrapper">
 
-    <h2>Snakes and Ladders — Login</h2>
+    <div class="game-header">
+        <h2>🎲 Snakes & Ladders</h2>
+    </div>
+
+    <h3>Login</h3>
 
     <?php if ($error): ?>
         <p class="error"><?php echo htmlspecialchars($error); ?></p>
@@ -66,7 +71,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <button type="submit">Login</button>
     </form>
 
-    <p>Don't have an account? <a href="register.php">Register here</a></p>
+    <p style="margin-top: 16px;">Don't have an account? <a href="register.php">Register here</a></p>
 
+</div>
 </body>
 </html>
