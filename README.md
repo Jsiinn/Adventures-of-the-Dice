@@ -45,8 +45,7 @@ This is a browser-based Snakes and Ladders game with two game modes, three diffi
   recap.php          # Adventure recap and path analysis
   users.txt          # Flat file user storage (auto created on first register)
   leaderboard.txt    # Flat file leaderboard storage (auto created on first win)
-  css/
-    styles.css       # All styles
+  styles.css       # All styles
 ```
 
 ---
